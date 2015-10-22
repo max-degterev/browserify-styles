@@ -1,0 +1,37 @@
+{
+  "name": "browserify-styles",
+  "version": "0.0.1",
+  "description": "Browserify plugin for bundling styles",
+  "keywords": [
+    "browserify",
+    "transform",
+    "browserify-transform",
+    "browserify-plugin",
+    "stylus"
+  ],
+  "dependencies": {
+    "lodash": "3.10.1",
+    "through2": "2.0.0",
+    "accord": "0.20.3"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "browserify": "11.2.0",
+    "stylus": "0.52.4"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/suprMax/browserify-styles.git"
+  },
+  "author": "Max Degterev <max@degterev.me>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/suprMax/browserify-styles/issues"
+  },
+  "engines": {
+    "node": ">=4.2"
+  }
+}
