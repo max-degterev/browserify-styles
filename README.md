@@ -13,11 +13,9 @@ $ npm install --save-dev browserify-styles
 ## Usage
 
 ```js
-var b = require('browserify')();
+var b = require('browserify')({ entries: './main.js' });
 
-b.add('./main.js');
 b.plugin(require('browserify-styles'), {
-  rootDir: __dirname,
   output: './path/to/my.css'
 });
 

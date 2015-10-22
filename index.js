@@ -1,37 +1,64 @@
 var fs = require('fs')
 var path = require('path');
 
-var through2 = require('through2');
 var _ = require('lodash');
+var through2 = require('through2');
 
 var accord = require('accord');
 
 var files = [];
 var processors = {
-  '.css': function(file, done) {
-    fs.readFile(file, function (err, data) {
-      if (!err) files.push(data);
-      done(err);
+  css: function(file, done) {
+    fs.readFile(file, function (error, data) {
+      if (!error) files.push(String(data));
+      done(error);
     });
-  },
-  '.styl': function(file, done) {
-    var stylus = accord.load('stylus');
+  }
+};
+var extensions = ['css'];
 
-    stylus.renderFile(file)
-      .then(function(res) {
-        if (res.result) files.push(new Buffer(res.result));
-        done()
+var processorFactory = function(module, options) {
+  var compiler = accord.load(module);
+
+  var processorFunction = function(file, done) {
+    compiler
+      .renderFile(file, options)
+      .then(function(response) {
+        if (response.result) files.push(response.result);
+        done();
       })
-      .catch(function(err) {
-        done(err)
+      .catch(function(error) {
+        done(error);
       });
+  };
+
+  return {
+    extensions: compiler.extensions,
+    processorFunction: processorFunction
+  };
+};
+
+var loadModules = function(options) {
+  var module, processor, extension;
+
+  for (var i = 0, _i = options.modules.length; i < _i; i++) {
+    module = options.modules[i];
+
+    processor = processorFactory(module, options.moduleOptions[module]);
+
+    for (var j = 0, _j = processor.extensions.length; j < _j; j++) {
+      extension = processor.extensions[j];
+
+      processors[extension] = processor.processorFunction;
+      extensions.push(extension);
+    }
   }
 };
 
+var transform = function (file, options) {
+  var ext = path.extname(file).slice(1);
 
-var transform = function (file, opts) {
-  var ext = path.extname(file);
-  if (opts.extensions.indexOf(ext) === -1) {
+  if (options.extensions.indexOf(ext) === -1) {
     // Unprocessable, skip
     return through2();
   }
@@ -43,23 +70,26 @@ var transform = function (file, opts) {
   }
 };
 
-var plugin = function(b, opts) {
-  opts = _.defaults(opts || {}, {
-    rootDir: process.cwd()
+var plugin = function(browserify, options) {
+  options = _.defaults(options || {}, {
+    rootDir: process.cwd(),
+    modules: [],
+    moduleOptions: {}
   });
 
-  var extensions = ['.css', '.styl'],
-      output = path.relative(opts.rootDir, opts.output);
+  var output = path.relative(options.rootDir, options.output);
 
-  b.transform(transform, {
+  if (options.modules.length) loadModules(options);
+
+  browserify.transform(transform, {
     global: true,
     extensions: extensions
   });
 
-  b.on('bundle', function (bundle) {
+  browserify.on('bundle', function (bundle) {
     bundle.on('end', function (){
-      fs.writeFile(output, Buffer.concat(files), function (err) {
-        if (err) return b.emit('error', err);
+      fs.writeFile(output, files.join(''), function (err) {
+        if (err) return browserify.emit('error', err);
       });
     });
   });

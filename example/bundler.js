@@ -4,8 +4,16 @@ var fs = require('fs'),
     bundle = browserify({ entries: './package/script.js' });
 
 bundle.plugin(require('../'), {
-  rootDir: __dirname,
-  output: './build/style.css'
+  output: './build/style.css',
+  modules: ['stylus', 'scss'],
+  moduleOptions: {
+    scss: {
+      indentedSyntax: true
+    }
+  }
 });
 
-bundle.bundle().pipe(writeStream);
+bundle
+  .bundle()
+  .on('error', function(error) { console.warn(error) })
+  .pipe(writeStream);
