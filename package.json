@@ -16,7 +16,9 @@
     "transform",
     "browserify-transform",
     "browserify-plugin",
+    "postcss",
     "stylus",
+    "scss",
     "sass"
   ],
   "engines": {
@@ -34,6 +36,7 @@
     "mocha": "*",
     "browserify": "11.2.0",
     "stylus": "0.52.4",
+    "postcss": "5.0.10",
     "node-sass": "3.3.3"
   }
 }

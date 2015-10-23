@@ -1,5 +1,6 @@
 var fs = require('fs')
 var path = require('path');
+var ReadableStream = require('stream').Readable;
 
 var _ = require('lodash');
 var through2 = require('through2');
@@ -8,16 +9,10 @@ var accord = require('accord');
 
 const PLUGIN_NAME = 'browserify-styles';
 
+var cssStream;
 var files = [];
-var processors = {
-  css: function(file, done) {
-    fs.readFile(file, function (error, data) {
-      if (!error) files.push(String(data));
-      done(error);
-    });
-  }
-};
-var extensions = ['css'];
+var processors = {};
+var extensions = [];
 
 var processorFactory = function(module, options) {
   var compiler = accord.load(module);
@@ -33,7 +28,10 @@ var processorFactory = function(module, options) {
     compiler
       .renderFile(file, options)
       .then(function(response) {
-        if (response.result) files.push(response.result);
+        if (response.result) {
+          files.push(response.result);
+          cssStream.push(response.result);
+        }
         done();
       })
       .catch(function(error) {
@@ -83,7 +81,7 @@ var transform = function (file, options) {
 var plugin = function(browserify, options) {
   options = _.defaults(options || {}, {
     rootDir: process.cwd(),
-    modules: [],
+    modules: ['postcss'],
     moduleOptions: {}
   });
 
@@ -101,9 +99,15 @@ var plugin = function(browserify, options) {
   });
 
   browserify.on('bundle', function (bundle) {
+    // on each bundle, create a new stream b/c the old one might have ended
+    cssStream = new ReadableStream();
+    cssStream._read = function() {};
+
+    bundle.emit('css_stream', cssStream);
     bundle.on('end', function (){
+      cssStream.push(null);
       fs.writeFile(output, files.join(''), function (error) {
-        if (error) return browserify.emit('error', error);
+        if (error) bundle.emit('error', error);
       });
     });
   });

@@ -5,7 +5,7 @@ var fs = require('fs'),
 
 bundle.plugin(require('../'), {
   output: './build/style.css',
-  modules: ['stylus', 'scss']
+  modules: ['postcss', 'stylus', 'scss']
 });
 
 bundle
