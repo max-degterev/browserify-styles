@@ -1,0 +1,10 @@
+html {
+  background: #bada55;
+}
+body {
+  width: 400px;
+  margin: 0 auto;
+  font: 17.391304347826086px 'San Francisco', sans-serif;
+}
+p {
+  color: black; }
