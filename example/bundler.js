@@ -5,15 +5,10 @@ var fs = require('fs'),
 
 bundle.plugin(require('../'), {
   output: './build/style.css',
-  modules: ['stylus', 'scss'],
-  moduleOptions: {
-    scss: {
-      indentedSyntax: true
-    }
-  }
+  modules: ['stylus', 'scss']
 });
 
 bundle
   .bundle()
-  .on('error', function(error) { console.warn(error) })
+  .on('error', function(error) { console.warn('ERRORE!!!', error) })
   .pipe(writeStream);

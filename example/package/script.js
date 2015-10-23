@@ -3,7 +3,7 @@ var a = 'a',
     c = require('./dependency');
 
 require('./style.css');
+require('./sass.sass');
 require('./stylus.styl');
-require('./sass.sass')
 
-console.log(a + b + c);
+console.log(a + b + c === 'abc' ? 'MODULE SYSTEM WORKS' : 'ERROR!');

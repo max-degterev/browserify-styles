@@ -21,6 +21,11 @@ var processorFactory = function(module, options) {
   var compiler = accord.load(module);
 
   var processorFunction = function(file, done) {
+    // hack needed because accord passes a string to a compiler, node-sass can't detect syntax type
+    if (module === 'scss' && options.indentedSyntax === undefined) {
+      options.indentedSyntax = /\.sass$/i.test(file);
+    }
+
     compiler
       .renderFile(file, options)
       .then(function(response) {
@@ -44,7 +49,7 @@ var loadModules = function(options) {
   for (var i = 0, _i = options.modules.length; i < _i; i++) {
     module = options.modules[i];
 
-    processor = processorFactory(module, options.moduleOptions[module]);
+    processor = processorFactory(module, options.moduleOptions[module] || {});
 
     for (var j = 0, _j = processor.extensions.length; j < _j; j++) {
       extension = processor.extensions[j];
