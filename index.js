@@ -6,6 +6,8 @@ var through2 = require('through2');
 
 var accord = require('accord');
 
+const PLUGIN_NAME = 'browserify-styles';
+
 var files = [];
 var processors = {
   css: function(file, done) {
@@ -21,10 +23,12 @@ var processorFactory = function(module, options) {
   var compiler = accord.load(module);
 
   var processorFunction = function(file, done) {
-    // hack needed because accord passes a string to a compiler, node-sass can't detect syntax type
+    // hack needed because accord passes a string to a compiler, node-sass can't detect syntax style
     if (module === 'scss' && options.indentedSyntax === undefined) {
       options.indentedSyntax = /\.sass$/i.test(file);
     }
+
+    var _this = this;
 
     compiler
       .renderFile(file, options)
@@ -33,7 +37,8 @@ var processorFactory = function(module, options) {
         done();
       })
       .catch(function(error) {
-        done(error);
+        _this.emit('error', error);
+        done();
       });
   };
 
@@ -44,18 +49,18 @@ var processorFactory = function(module, options) {
 };
 
 var loadModules = function(options) {
-  var module, processor, extension;
+  var module, procsr, ext;
 
   for (var i = 0, _i = options.modules.length; i < _i; i++) {
     module = options.modules[i];
 
-    processor = processorFactory(module, options.moduleOptions[module] || {});
+    procsr = processorFactory(module, options.moduleOptions[module] || {});
 
-    for (var j = 0, _j = processor.extensions.length; j < _j; j++) {
-      extension = processor.extensions[j];
+    for (var j = 0, _j = procsr.extensions.length; j < _j; j++) {
+      ext = procsr.extensions[j];
 
-      processors[extension] = processor.processorFunction;
-      extensions.push(extension);
+      processors[ext] = procsr.processorFunction;
+      extensions.push(ext);
     }
   }
 };
@@ -70,7 +75,7 @@ var transform = function (file, options) {
   else {
     // Processable, swallow
     return through2(function (buf, enc, next) {
-      processors[ext](file, next);
+      processors[ext].call(this, file, next);
     });
   }
 };
@@ -81,6 +86,10 @@ var plugin = function(browserify, options) {
     modules: [],
     moduleOptions: {}
   });
+
+  if (!options.output) {
+    throw new Error(PLUGIN_NAME + ' requires output option to function');
+  }
 
   var output = path.relative(options.rootDir, options.output);
 
@@ -93,8 +102,8 @@ var plugin = function(browserify, options) {
 
   browserify.on('bundle', function (bundle) {
     bundle.on('end', function (){
-      fs.writeFile(output, files.join(''), function (err) {
-        if (err) return browserify.emit('error', err);
+      fs.writeFile(output, files.join(''), function (error) {
+        if (error) return browserify.emit('error', error);
       });
     });
   });

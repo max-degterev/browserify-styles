@@ -10,5 +10,5 @@ bundle.plugin(require('../'), {
 
 bundle
   .bundle()
-  .on('error', function(error) { console.warn('ERRORE!!!', error) })
+  .on('error', function(error) { console.warn(error.stack || error) })
   .pipe(writeStream);
