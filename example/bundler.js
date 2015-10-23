@@ -5,7 +5,23 @@ var fs = require('fs'),
 
 bundle.plugin(require('../'), {
   output: './build/style.css',
-  modules: ['postcss', 'stylus', 'scss']
+  modules: ['postcss', 'stylus', 'scss'],
+  moduleOptions: {
+    postcss: {
+    },
+    stylus: {
+      errors: true,
+      //use: [nib()],
+      paths: [__dirname + "/node_modules"],
+      'include css': true,
+      // urlfunc: 'embedurl',
+      linenos: true
+    },
+    scss: {
+      sourceComments: true,
+      includePaths: [__dirname + "/node_modules"]
+    }
+  }
 });
 
 bundle
