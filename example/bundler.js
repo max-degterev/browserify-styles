@@ -7,8 +7,6 @@ bundle.plugin(require('../'), {
   output: './build/style.css',
   modules: ['postcss', 'stylus', 'scss'],
   moduleOptions: {
-    postcss: {
-    },
     stylus: {
       errors: true,
       //use: [nib()],

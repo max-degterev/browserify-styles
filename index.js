@@ -1,4 +1,4 @@
-var fs = require('fs')
+var fs = require('fs');
 var path = require('path');
 var ReadableStream = require('stream').Readable;
 
@@ -47,33 +47,27 @@ var processorFactory = function(module, options) {
 };
 
 var loadModules = function(options) {
-  var module, procsr, ext;
+  options.modules.forEach(function(module) {
+    var processor = processorFactory(module, options.moduleOptions[module] || {});
 
-  for (var i = 0, _i = options.modules.length; i < _i; i++) {
-    module = options.modules[i];
-
-    procsr = processorFactory(module, options.moduleOptions[module] || {});
-
-    for (var j = 0, _j = procsr.extensions.length; j < _j; j++) {
-      ext = procsr.extensions[j];
-
-      processors[ext] = procsr.processorFunction;
-      extensions.push(ext);
-    }
-  }
+    processor.extensions.forEach(function(extension) {
+      processors[extension] = processor.processorFunction;
+      extensions.push(extension);
+    });
+  })
 };
 
 var transform = function (file, options) {
-  var ext = path.extname(file).slice(1);
+  var extension = path.extname(file).slice(1);
 
-  if (options.extensions.indexOf(ext) === -1) {
+  if (options.extensions.indexOf(extension) === -1) {
     // Unprocessable, skip
     return through2();
   }
   else {
     // Processable, swallow
     return through2(function (buf, enc, next) {
-      processors[ext].call(this, file, next);
+      processors[extension].call(this, file, next);
     });
   }
 };
