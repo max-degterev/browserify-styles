@@ -100,8 +100,9 @@ module.exports = function(browserify, options) {
       cssStream.push(null);
       if (output) {
         fs.writeFile(output, files.join(''), function (error) {
-          if (error) bundle.emit('error', error);
-          bundle.emit('css_end', output);
+          // bundle was destroyed, emit new events on `browserify`
+          if (error) browserify.emit('error', error);
+          browserify.emit('css_end', output);
         });
       }
     });
