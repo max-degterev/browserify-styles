@@ -101,7 +101,7 @@ module.exports = function(browserify, options) {
       if (output) {
         fs.writeFile(output, files.join(''), function (error) {
           if (error) bundle.emit('error', error);
-          bundle.emit('css_end', error);
+          bundle.emit('css_end', output);
         });
       }
     });
