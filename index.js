@@ -9,89 +9,85 @@ var through2 = require('through2');
 
 var accord = require('accord');
 
-const PLUGIN_NAME = 'browserify-styles';
 
-var cssStream;
-var files = [];
-var processors = {};
-var extensions = [];
-
-var processorFactory = function(module, options) {
-  var compiler = accord.load(module);
-
-  var processorFunction = function(file, done) {
-    // hack needed because accord passes a string to a compiler, node-sass can't detect syntax style
-    if (module === 'scss' && options.indentedSyntax === undefined) {
-      options.indentedSyntax = /\.sass$/i.test(file);
-    }
-
-    var _this = this;
-
-    compiler
-      .renderFile(file, options)
-      .then(function(response) {
-        if (response.result) {
-          files.push(response.result);
-          cssStream.push(response.result);
-        }
-        done();
-      })
-      .catch(function(error) {
-        _this.emit('error', error);
-        done();
-      });
-  };
-
-  return {
-    extensions: compiler.extensions,
-    processorFunction: processorFunction
-  };
-};
-
-var loadModules = function(options) {
-  options.modules.forEach(function(module) {
-    var processor = processorFactory(module, options.moduleOptions[module] || {});
-
-    processor.extensions.forEach(function(extension) {
-      processors[extension] = processor.processorFunction;
-      extensions.push(extension);
-    });
-  })
-};
-
-var transform = function (file, options) {
-  var extension = path.extname(file).slice(1);
-
-  if (options.extensions.indexOf(extension) === -1) {
-    // Unprocessable, skip
-    return through2();
-  }
-  else {
-    // Processable, swallow
-    return through2(function (buf, enc, next) {
-      processors[extension].call(this, file, next);
-    });
-  }
-};
-
-var plugin = function(browserify, options) {
+module.exports = function(browserify, options) {
   options = _.defaults(options || {}, {
     rootDir: process.cwd(),
     modules: ['postcss'],
     moduleOptions: {}
   });
 
-  if (!options.output) {
-    throw new Error(PLUGIN_NAME + ' requires output option to function');
-  }
+  var processors = {};
+  var extensions = [];
 
-  var output = path.relative(options.rootDir, options.output);
+  var files = [];
 
-  if (options.modules.length) loadModules(options);
+  var output;
+  var cssStream;
+
+  var processorFactory = function(module, settings) {
+    var compiler = accord.load(module);
+
+    var compile = function(file, done) {
+      // hack needed because accord passes a string to a compiler, node-sass can't detect syntax style
+      if (module === 'scss' && settings.indentedSyntax === undefined) {
+        settings.indentedSyntax = /\.sass$/i.test(file);
+      }
+
+      var _this = this;
+
+      compiler
+        .renderFile(file, settings)
+        .then(function(response) {
+          if (response.result) {
+            cssStream.push(response.result);
+            files.push(response.result);
+          }
+          done();
+        })
+        .catch(function(error) {
+          _this.emit('error', error);
+          done();
+        });
+    };
+
+    return {
+      extensions: compiler.extensions,
+      compile: compile
+    };
+  };
+
+  var loadModules = function() {
+    options.modules.forEach(function(module) {
+      var processor = processorFactory(module, options.moduleOptions[module] || {});
+
+      processor.extensions.forEach(function(extension) {
+        processors[extension] = processor.compile;
+        extensions.push(extension);
+      });
+    })
+  };
+
+  var transform = function (file) {
+    var extension = path.extname(file).slice(1);
+
+    if (extensions.indexOf(extension) === -1) {
+      // Unprocessable, skip
+      return through2();
+    }
+    else {
+      // Processable, swallow
+      return through2(function (buf, enc, next) {
+        processors[extension].call(this, file, next);
+      });
+    }
+  };
+
+  if (options.output) output = path.relative(options.rootDir, options.output);
+  if (options.modules.length) loadModules();
 
   browserify.transform(transform, {
-    global: true,
-    extensions: extensions
+    global: true
   });
 
   browserify.on('bundle', function (bundle) {
@@ -102,11 +98,11 @@ var plugin = function(browserify, options) {
     bundle.emit('css_stream', cssStream);
     bundle.on('end', function (){
       cssStream.push(null);
-      fs.writeFile(output, files.join(''), function (error) {
-        if (error) bundle.emit('error', error);
-      });
+      if (output) {
+        fs.writeFile(output, files.join(''), function (error) {
+          if (error) bundle.emit('error', error);
+        });
+      }
     });
   });
 };
-
-module.exports = plugin;
