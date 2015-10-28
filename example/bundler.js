@@ -13,10 +13,8 @@ bundle.plugin(require('../'), {
       paths: [__dirname + "/node_modules"],
       'include css': true,
       // urlfunc: 'embedurl',
-      linenos: true
     },
     scss: {
-      sourceComments: true,
       includePaths: [__dirname + "/node_modules"]
     }
   }

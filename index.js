@@ -9,6 +9,8 @@ var through2 = require('through2');
 
 var accord = require('accord');
 
+const ENCODING = 'utf8';
+
 
 module.exports = function(browserify, options) {
   options = _.defaults(options || {}, {
@@ -21,6 +23,7 @@ module.exports = function(browserify, options) {
   var extensions = [];
 
   var files = [];
+  var contets = {};
 
   var output;
   var cssStream;
@@ -28,7 +31,7 @@ module.exports = function(browserify, options) {
   var processorFactory = function(module, settings) {
     var compiler = accord.load(module);
 
-    var compile = function(file, done) {
+    var compile = function(file, contents, done) {
       // hack needed because accord passes a string to a compiler, node-sass can't detect syntax style
       if (module === 'scss' && settings.indentedSyntax === undefined) {
         settings.indentedSyntax = /\.sass$/i.test(file);
@@ -37,11 +40,11 @@ module.exports = function(browserify, options) {
       var _this = this;
 
       compiler
-        .renderFile(file, settings)
+        .render(contents, _.clone(settings))
         .then(function(response) {
           if (response.result) {
             cssStream.push(response.result);
-            files.push(response.result);
+            contents[file] = response.result;
           }
           done();
         })
@@ -78,7 +81,8 @@ module.exports = function(browserify, options) {
     else {
       // Processable, swallow
       return through2(function (buf, enc, next) {
-        processors[extension].call(this, file, next);
+        files.push(file);
+        processors[extension].call(this, file, buf.toString(ENCODING), next);
       });
     }
   };
@@ -99,7 +103,13 @@ module.exports = function(browserify, options) {
     bundle.on('end', function (){
       cssStream.push(null);
       if (output) {
-        fs.writeFile(output, files.join(''), function (error) {
+        var contentString = '';
+
+        files.forEach(function(file) {
+          contentString += contents[file];
+        });
+
+        fs.writeFile(output, contentString, ENCODING, function (error) {
           // bundle was destroyed, emit new events on `browserify`
           if (error) browserify.emit('error', error);
           browserify.emit('css_end', output);
