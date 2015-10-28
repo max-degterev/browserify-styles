@@ -2,6 +2,8 @@
 
 Browserify plugin for bundling styles. Allows for `require('./awesome.styl')` and `require('./legacy.css')`. Concats and puts those files in a separate processed CSS file which you can later minify, modify and serve as you desire.
 
+Due to async nature of browserify, css definitions may come in random order. Something to keep in mind.
+
 
 ## Install
 

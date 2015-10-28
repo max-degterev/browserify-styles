@@ -23,7 +23,7 @@ module.exports = function(browserify, options) {
   var extensions = [];
 
   var files = [];
-  var contets = {};
+  var contents = {};
 
   var output;
   var cssStream;
@@ -31,7 +31,7 @@ module.exports = function(browserify, options) {
   var processorFactory = function(module, settings) {
     var compiler = accord.load(module);
 
-    var compile = function(file, contents, done) {
+    var compile = function(file, string, done) {
       // hack needed because accord passes a string to a compiler, node-sass can't detect syntax style
       if (module === 'scss' && settings.indentedSyntax === undefined) {
         settings.indentedSyntax = /\.sass$/i.test(file);
@@ -40,7 +40,7 @@ module.exports = function(browserify, options) {
       var _this = this;
 
       compiler
-        .render(contents, _.clone(settings))
+        .render(string, _.clone(settings))
         .then(function(response) {
           if (response.result) {
             cssStream.push(response.result);
